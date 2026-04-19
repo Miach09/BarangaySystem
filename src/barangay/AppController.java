@@ -5,8 +5,8 @@ import java.awt.*;
 
 public class AppController {
 
-    private static final int APP_W = 860;
-    private static final int APP_H = 620;
+    private static final int APP_W = 1000;
+    private static final int APP_H = 720;
 
     private final JFrame frame;
 
