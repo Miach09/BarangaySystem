@@ -160,7 +160,7 @@ public class NotificationPanel extends JPanel {
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
         row.setAlignmentX(LEFT_ALIGNMENT);
 
-        // Icon label on the left -- load PNG like settings/logout buttons
+        // Icon label on the left
         ImageIcon notifIcon = null;
         try {
             String imgName = isResolved ? "/barangay/accept.png" : "/barangay/rejected.png";

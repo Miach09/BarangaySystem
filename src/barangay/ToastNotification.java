@@ -64,9 +64,21 @@ public class ToastNotification {
         card.setPreferredSize(new Dimension(340, isAccepted ? 80 : 95));
 
         // Icon
-        JLabel icon = new JLabel(isAccepted ? "✅" : "❌");
-        icon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 22));
-        icon.setVerticalAlignment(SwingConstants.TOP);
+        ImageIcon notifIcon = null;
+        try {
+            String imgName = isAccepted ? "/barangay/accept.png" : "/barangay/rejected.png";
+            java.net.URL iconUrl = NotificationPanel.class.getResource(imgName);
+            if (iconUrl != null) {
+                Image iconImg = new ImageIcon(iconUrl).getImage().getScaledInstance(28, 28, Image.SCALE_SMOOTH);
+                notifIcon = new ImageIcon(iconImg);
+            }
+        } catch (Exception ex) { /* fallback below */ }
+        JLabel iconLbl = notifIcon != null ? new JLabel(notifIcon) : new JLabel(isAccepted ? "\u2713" : "\u2717");
+        if (notifIcon == null) {
+            iconLbl.setFont(new Font("Segoe UI", Font.PLAIN, 20));
+            iconLbl.setForeground(isAccepted ? new Color(34, 160, 90) : new Color(210, 50, 50));
+        }
+        iconLbl.setVerticalAlignment(SwingConstants.TOP);
 
         // Text
         JPanel textPanel = new JPanel();
@@ -129,7 +141,7 @@ public class ToastNotification {
             }
         });
 
-        card.add(icon,     BorderLayout.WEST);
+        card.add(iconLbl,     BorderLayout.WEST);
         card.add(textPanel, BorderLayout.CENTER);
         card.add(closeBtn,  BorderLayout.EAST);
 
