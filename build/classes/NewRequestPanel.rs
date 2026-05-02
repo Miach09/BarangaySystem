@@ -1,3 +1,0 @@
-barangay.NewRequestPanel
-barangay.NewRequestPanel$2
-barangay.NewRequestPanel$1

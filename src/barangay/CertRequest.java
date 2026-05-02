@@ -9,8 +9,9 @@ public class CertRequest {
     public String description;
     public RequestStatus status;
     public String dateSubmitted;
+    public String rejectReason;
 
-    public enum RequestStatus { PENDING, RESOLVED }
+    public enum RequestStatus { PENDING, ACCEPTED, REJECTED }
 
     public CertRequest(String requesterName, String contactNumber, String email,
                        String requestType, String description) {

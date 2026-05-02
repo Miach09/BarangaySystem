@@ -17,7 +17,8 @@ public class AppController {
         frame.setLocationRelativeTo(null);
     }
 
-    //Screen navigation
+    // Screen navigation
+
     public void showLogin() {
         frame.setExtendedState(JFrame.NORMAL);
         setScreen(new LoginPanel(this));
@@ -39,6 +40,12 @@ public class AppController {
         setScreen(new GuestDashboardPanel(this));
         frame.setTitle("Dashboard – Barangay Bagong Sikat");
         setSizeIfNotMaximized(APP_W, APP_H);
+        // Show floating toast for accepted/rejected requests
+        User u = Database.getCurrentUser();
+        if (u != null && !u.isAdmin) {
+            SwingUtilities.invokeLater(() ->
+                ToastNotification.show(frame, u.email));
+        }
     }
 
     public void showNewRequest() {
@@ -71,13 +78,24 @@ public class AppController {
         setSizeIfNotMaximized(APP_W, APP_H);
     }
 
+    public void showNotifications() {
+        setScreen(new NotificationPanel(this));
+        frame.setTitle("Notifications – Barangay Bagong Sikat");
+        setSizeIfNotMaximized(APP_W, APP_H);
+    }
+
+    public void showAdminRequestHistory() {
+        setScreen(new AdminRequestHistoryPanel(this));
+        frame.setTitle("Request History – Barangay Bagong Sikat");
+        setSizeIfNotMaximized(APP_W, APP_H);
+    }
+
     public void logout() {
         Database.logout();
         showLogin();
     }
 
-    //Helpers
-    
+    // Helpers
     /** Only resize if the window is not currently maximized */
     private void setSizeIfNotMaximized(int w, int h) {
         if (frame.getExtendedState() != JFrame.MAXIMIZED_BOTH) {

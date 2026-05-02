@@ -1,1 +1,0 @@
-barangay.SettingsPanel

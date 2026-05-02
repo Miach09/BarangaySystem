@@ -6,7 +6,7 @@ import java.awt.*;
 
 public class UITheme {
 
-    //Colors
+    // Colors
     public static final Color PRIMARY       = new Color(30, 100, 210);
     public static final Color PRIMARY_HOVER = new Color(20, 80, 180);
     public static final Color SUCCESS       = new Color(34, 160, 90);
@@ -19,14 +19,14 @@ public class UITheme {
     public static final Color TEXT_MUTED    = new Color(100, 100, 110);
     public static final Color BORDER        = new Color(200, 210, 200);
 
-    //Fonts
+    // Fonts
     public static final Font FONT_TITLE  = new Font("Segoe UI", Font.BOLD,  22);
     public static final Font FONT_HEADER = new Font("Segoe UI", Font.BOLD,  14);
     public static final Font FONT_BODY   = new Font("Segoe UI", Font.PLAIN, 13);
     public static final Font FONT_SMALL  = new Font("Segoe UI", Font.PLAIN, 11);
     public static final Font FONT_BTN    = new Font("Segoe UI", Font.BOLD,  13);
 
-    //Builders 
+    // Builders
 
     /** Rounded-corner blue primary button */
     public static JButton primaryButton(String text) {
@@ -77,13 +77,13 @@ public class UITheme {
             }
         };
         btn.setForeground(Color.WHITE);
-        btn.setFont(FONT_SMALL);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 12));
         btn.setOpaque(false);
         btn.setContentAreaFilled(false);
         btn.setBorderPainted(false);
         btn.setFocusPainted(false);
+        btn.setBorder(new EmptyBorder(5, 14, 5, 14));
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.setPreferredSize(new Dimension(70, 28));
         return btn;
     }
 
@@ -100,34 +100,48 @@ public class UITheme {
             }
         };
         btn.setForeground(Color.WHITE);
-        btn.setFont(FONT_SMALL);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 12));
         btn.setOpaque(false);
         btn.setContentAreaFilled(false);
         btn.setBorderPainted(false);
         btn.setFocusPainted(false);
+        btn.setBorder(new EmptyBorder(5, 14, 5, 14));
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.setPreferredSize(new Dimension(70, 28));
         return btn;
     }
 
     /** Styled text field */
     public static JTextField textField(String placeholder) {
-        JTextField tf = new JTextField();
+        JTextField tf = new JTextField() {
+            @Override public Dimension getPreferredSize() {
+                Dimension d = super.getPreferredSize();
+                d.height = Math.max(d.height, 38);
+                return d;
+            }
+            @Override public Dimension getMinimumSize() { return getPreferredSize(); }
+        };
         tf.setFont(FONT_BODY);
-        tf.setBorder(BorderFactory.createCompoundBorder(
+        tf.setBorder(new CompoundBorder(
             new LineBorder(BORDER, 1, true),
-            new EmptyBorder(6, 10, 6, 10)));
+            new EmptyBorder(0, 10, 0, 10)));
         tf.setToolTipText(placeholder);
         return tf;
     }
 
     /** Styled password field */
     public static JPasswordField passwordField() {
-        JPasswordField pf = new JPasswordField();
+        JPasswordField pf = new JPasswordField() {
+            @Override public Dimension getPreferredSize() {
+                Dimension d = super.getPreferredSize();
+                d.height = Math.max(d.height, 38);
+                return d;
+            }
+            @Override public Dimension getMinimumSize() { return getPreferredSize(); }
+        };
         pf.setFont(FONT_BODY);
-        pf.setBorder(BorderFactory.createCompoundBorder(
+        pf.setBorder(new CompoundBorder(
             new LineBorder(BORDER, 1, true),
-            new EmptyBorder(6, 10, 6, 10)));
+            new EmptyBorder(0, 10, 0, 10)));
         return pf;
     }
 
@@ -185,19 +199,23 @@ public class UITheme {
         return card;
     }
 
-    /** Status badge label */
+    /** Status badge label — handles Pending, Accepted, Rejected */
     public static JLabel statusBadge(CertRequest.RequestStatus status) {
-        JLabel lbl = new JLabel(status == CertRequest.RequestStatus.PENDING ? "Pending" : "Resolved");
-        lbl.setFont(FONT_SMALL);
-        lbl.setOpaque(true);
-        if (status == CertRequest.RequestStatus.PENDING) {
-            lbl.setBackground(new Color(255, 235, 170));
-            lbl.setForeground(new Color(120, 70, 0));
-        } else {
-            lbl.setBackground(new Color(180, 240, 200));
-            lbl.setForeground(new Color(0, 100, 40));
+        String text; Color bg, fg;
+        switch (status) {
+            case ACCEPTED:
+                text = "Accepted"; bg = new Color(180, 240, 200); fg = new Color(0, 100, 40);  break;
+            case REJECTED:
+                text = "Rejected"; bg = new Color(255, 200, 200); fg = new Color(150, 0, 0);   break;
+            default:
+                text = "Pending";  bg = new Color(255, 235, 170); fg = new Color(120, 70, 0);  break;
         }
-        lbl.setBorder(new EmptyBorder(2, 8, 2, 8));
+        JLabel lbl = new JLabel(text);
+        lbl.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        lbl.setOpaque(true);
+        lbl.setBackground(bg);
+        lbl.setForeground(fg);
+        lbl.setBorder(new EmptyBorder(3, 10, 3, 10));
         lbl.setHorizontalAlignment(SwingConstants.CENTER);
         return lbl;
     }
@@ -249,10 +267,10 @@ public class UITheme {
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g.setColor(color);
         g.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-        //Door rectangle
+        // Door rectangle
         int pad = size / 5;
         g.drawRect(pad, pad, size / 3, size - pad * 2);
-        //Arrow pointing right
+        // Arrow pointing right
         int arrowY = size / 2;
         int arrowStartX = size / 2;
         int arrowEndX = size - pad;
@@ -271,9 +289,9 @@ public class UITheme {
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g.setColor(new Color(30, 100, 210));
         g.setStroke(new BasicStroke(2.2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-        //Arrow shaft
+        // Arrow shaft
         g.drawLine(14, 9, 4, 9);
-        //Arrow head
+        // Arrow head
         g.drawLine(4, 9, 9, 4);
         g.drawLine(4, 9, 9, 14);
         g.dispose();
@@ -301,10 +319,20 @@ public class UITheme {
         return btn;
     }
 
-    /** Settings icon button for header bar */
+    // Settings icon button
     public static JButton settingsButton() {
-        ImageIcon icon = gearIcon(18, new Color(50, 50, 50));
-        JButton btn = new JButton("Settings", icon) {
+        // Try loading settings icon
+        ImageIcon icon = null;
+        try {
+            java.net.URL url = UITheme.class.getResource("/barangay/settings.png");
+            if (url != null) {
+                Image img = new ImageIcon(url).getImage().getScaledInstance(18, 18, Image.SCALE_SMOOTH);
+                icon = new ImageIcon(img);
+            }
+        } catch (Exception ignored) {}
+        final ImageIcon finalIcon = icon != null ? icon : gearIcon(18, new Color(50, 50, 50));
+
+        JButton btn = new JButton("Settings", finalIcon) {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -326,10 +354,20 @@ public class UITheme {
         return btn;
     }
 
-    /** Logout icon button for header bar */
+    // Logout icon button
     public static JButton logoutButton() {
-        ImageIcon icon = logoutIcon(18, new Color(180, 30, 30));
-        JButton btn = new JButton("Logout", icon) {
+        // Try loading logout icon
+        ImageIcon icon = null;
+        try {
+            java.net.URL url = UITheme.class.getResource("/barangay/logout.png");
+            if (url != null) {
+                Image img = new ImageIcon(url).getImage().getScaledInstance(18, 18, Image.SCALE_SMOOTH);
+                icon = new ImageIcon(img);
+            }
+        } catch (Exception ignored) {}
+        final ImageIcon finalIcon = icon != null ? icon : logoutIcon(18, new Color(180, 30, 30));
+
+        JButton btn = new JButton("Logout", finalIcon) {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);

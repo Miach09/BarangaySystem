@@ -10,7 +10,7 @@ public class SettingsPanel extends JPanel {
     private final boolean isAdmin;
 
     public SettingsPanel(AppController ctrl, boolean isAdmin) {
-        this.ctrl = ctrl;
+        this.ctrl    = ctrl;
         this.isAdmin = isAdmin;
         setBackground(UITheme.BG_MAIN);
         setLayout(new BorderLayout());
@@ -20,10 +20,14 @@ public class SettingsPanel extends JPanel {
 
     private JPanel buildHeader() {
         JPanel bar = UITheme.headerBar("Settings");
-        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 8));
+        bar.setPreferredSize(new Dimension(0, 60));
+        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 12));
         right.setOpaque(false);
         JButton logout = UITheme.logoutButton();
-        logout.addActionListener(e -> ctrl.logout());
+        logout.addActionListener(e -> {
+            int r = JOptionPane.showConfirmDialog(SwingUtilities.getWindowAncestor(this), "Are you sure you want to logout?", "Confirm Logout", JOptionPane.YES_NO_OPTION);
+            if (r == JOptionPane.YES_OPTION) ctrl.logout();
+        });
         right.add(logout);
         bar.add(right, BorderLayout.EAST);
         return bar;
@@ -42,7 +46,6 @@ public class SettingsPanel extends JPanel {
             else         ctrl.showGuestDashboard();
         });
 
-        //Push back button to the far right
         JPanel backRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         backRow.setOpaque(false);
         backRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
@@ -50,58 +53,75 @@ public class SettingsPanel extends JPanel {
         backRow.add(backBtn);
 
         User user = Database.getCurrentUser();
+        Font fieldFont = new Font("Segoe UI", Font.PLAIN, 14);
 
-        //Profile card
+        // Profile card
         JPanel profileCard = UITheme.card();
         profileCard.setLayout(new GridBagLayout());
-        profileCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 150));
+        profileCard.setAlignmentX(LEFT_ALIGNMENT);
+        profileCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 200));
         GridBagConstraints gbc = defaultGbc();
 
-        JTextField nameField  = UITheme.textField("Name");
-        JTextField phoneField = UITheme.textField("Phone No");
-        JTextField emailField = UITheme.textField("Email Address");
+        JTextField nameField    = UITheme.textField("Name");
+        JTextField phoneField   = UITheme.textField("Phone No");
+        JTextField emailField   = UITheme.textField("Email Address");
+        JTextField addressField = UITheme.textField("Address");
+
+        nameField.setFont(fieldFont);
+        phoneField.setFont(fieldFont);
+        emailField.setFont(fieldFont);
+        addressField.setFont(fieldFont);
 
         nameField.setText(user.fullName);
         phoneField.setText(user.phone);
         emailField.setText(user.email);
+        addressField.setText(user.address);
 
-        //Row 0: Name (left) | Phone (right)
-        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 1;
+        // Row 0: Name | Phone
+        gbc.gridx = 0; gbc.gridy = 0;
         profileCard.add(labeled("Name", nameField), gbc);
         gbc.gridx = 1;
         profileCard.add(labeled("Phone No", phoneField), gbc);
 
-        //Row 1: Email (left span)
+        // Row 1: Email | Address
         gbc.gridx = 0; gbc.gridy = 1;
         profileCard.add(labeled("Email Address", emailField), gbc);
+        gbc.gridx = 1;
+        profileCard.add(labeled("Address", addressField), gbc);
 
-        //Row 1 right: Save button
+        // Row 2: Save button
         JButton saveBtn = UITheme.primaryButton("Save Changes");
+        saveBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
         saveBtn.addActionListener(e -> {
-            String name  = nameField.getText().trim();
-            String phone = phoneField.getText().trim();
-            String email = emailField.getText().trim();
-            if (name.isEmpty() || phone.isEmpty() || email.isEmpty()) {
+            String name    = nameField.getText().trim();
+            String phone   = phoneField.getText().trim();
+            String email   = emailField.getText().trim();
+            String address = addressField.getText().trim();
+            if (name.isEmpty() || phone.isEmpty() || email.isEmpty() || address.isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Fields cannot be empty.",
                     "Validation", JOptionPane.WARNING_MESSAGE);
                 return;
             }
-            Database.updateProfile(name, phone, email);
+            Database.updateProfile(name, phone, address, email);
             JOptionPane.showMessageDialog(this, "Profile updated!", "Success",
                 JOptionPane.INFORMATION_MESSAGE);
         });
-        gbc.gridx = 1;
+        gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 2;
         profileCard.add(saveBtn, gbc);
 
-        //Password card
+        // Password card
         JPanel passCard = UITheme.card();
         passCard.setLayout(new GridBagLayout());
-        passCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 150));
+        passCard.setAlignmentX(LEFT_ALIGNMENT);
+        passCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 180));
         GridBagConstraints gbc2 = defaultGbc();
 
         JPasswordField currentPass = UITheme.passwordField();
         JPasswordField newPass     = UITheme.passwordField();
         JPasswordField confirmPass = UITheme.passwordField();
+        currentPass.setFont(fieldFont);
+        newPass.setFont(fieldFont);
+        confirmPass.setFont(fieldFont);
 
         gbc2.gridx = 0; gbc2.gridy = 0;
         passCard.add(labeled("Current Password", currentPass), gbc2);
@@ -112,18 +132,18 @@ public class SettingsPanel extends JPanel {
         passCard.add(labeled("Confirm Password", confirmPass), gbc2);
 
         JButton updatePassBtn = UITheme.primaryButton("Update Password");
+        updatePassBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
         updatePassBtn.addActionListener(e -> {
             String cur     = new String(currentPass.getPassword());
             String newP    = new String(newPass.getPassword());
             String confirm = new String(confirmPass.getPassword());
-
             if (cur.isEmpty() || newP.isEmpty() || confirm.isEmpty()) {
                 JOptionPane.showMessageDialog(this, "All password fields are required.",
                     "Validation", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             if (!newP.equals(confirm)) {
-                JOptionPane.showMessageDialog(this, "New password and confirmation do not match.",
+                JOptionPane.showMessageDialog(this, "Passwords do not match.",
                     "Validation", JOptionPane.WARNING_MESSAGE);
                 return;
             }
@@ -137,14 +157,11 @@ public class SettingsPanel extends JPanel {
                 JOptionPane.showMessageDialog(this, "Current password is incorrect.",
                     "Error", JOptionPane.ERROR_MESSAGE);
             } else {
-                JOptionPane.showMessageDialog(this, "Password updated successfully!",
+                JOptionPane.showMessageDialog(this, "Password updated!",
                     "Success", JOptionPane.INFORMATION_MESSAGE);
-                currentPass.setText("");
-                newPass.setText("");
-                confirmPass.setText("");
+                currentPass.setText(""); newPass.setText(""); confirmPass.setText("");
             }
         });
-
         gbc2.gridx = 1; gbc2.gridy = 1;
         passCard.add(updatePassBtn, gbc2);
 
@@ -159,8 +176,8 @@ public class SettingsPanel extends JPanel {
 
     private GridBagConstraints defaultGbc() {
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(6, 6, 6, 6);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets  = new Insets(6, 6, 6, 6);
+        gbc.fill    = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 0.5;
         return gbc;
     }
@@ -169,7 +186,8 @@ public class SettingsPanel extends JPanel {
         JPanel p = new JPanel(new BorderLayout(0, 4));
         p.setOpaque(false);
         JLabel lbl = new JLabel(label);
-        lbl.setFont(UITheme.FONT_BODY);
+        lbl.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        lbl.setForeground(UITheme.TEXT_DARK);
         p.add(lbl, BorderLayout.NORTH);
         p.add(field, BorderLayout.CENTER);
         return p;

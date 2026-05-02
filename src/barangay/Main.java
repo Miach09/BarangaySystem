@@ -8,7 +8,7 @@ public class Main {
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {
-            // default L&F
+
         }
         SwingUtilities.invokeLater(() -> {
             AppController controller = new AppController();

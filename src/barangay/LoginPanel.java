@@ -49,11 +49,9 @@ public class LoginPanel extends JPanel {
         //Fields
         emailField = UITheme.textField("youremail@gmail.com");
         emailField.setFont(new Font("Segoe UI", Font.PLAIN, 15));
-        emailField.setPreferredSize(new Dimension(0, 44));
 
         passField = UITheme.passwordField();
         passField.setFont(new Font("Segoe UI", Font.PLAIN, 15));
-        passField.setPreferredSize(new Dimension(0, 44));
 
         JPanel form = new JPanel(new GridLayout(2, 1, 0, 14));
         form.setOpaque(false);
