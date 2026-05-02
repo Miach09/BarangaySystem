@@ -51,13 +51,12 @@ public class GuestDashboardPanel extends JPanel {
         User user = Database.getCurrentUser();
         int unread = user != null ? Database.countUnreadNotifications(user.email) : 0;
 
-        // Icon-only bell button — yellow default, darker yellow on hover
-        // To use your own image: put bell.png inside src/barangay/ and it loads automatically.
-        // Falls back to drawn icon if file not found.
+        /* Icon-only bell button — yellow default, darker yellow on hover
+           Falls back to drawn icon if file not found. */
         int btnSize = 42;
         int iconSize = 22;
 
-        // Try loading image from src/barangay/bell.png
+        // Try loading image
         ImageIcon bellNormal = null;
         ImageIcon bellHover  = null;
         try {
@@ -66,7 +65,7 @@ public class GuestDashboardPanel extends JPanel {
                 Image raw = new ImageIcon(bellUrl).getImage()
                     .getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH);
                 bellNormal = new ImageIcon(raw);
-                bellHover  = bellNormal; // same image, bg color changes on hover
+                bellHover  = bellNormal; 
             }
         } catch (Exception ignored) {}
 
@@ -82,10 +81,9 @@ public class GuestDashboardPanel extends JPanel {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                // Yellow default, darker amber on hover
                 g2.setColor(getModel().isRollover()
-                    ? new Color(220, 170, 0)      // darker amber hover
-                    : new Color(255, 228, 114));   // bright yellow default
+                    ? new Color(220, 170, 0)   
+                    : new Color(255, 228, 114));  
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
                 g2.dispose();
                 // Draw icon centered
@@ -134,7 +132,9 @@ public class GuestDashboardPanel extends JPanel {
         JButton logout   = UITheme.logoutButton();
         settings.addActionListener(e -> ctrl.showGuestSettings());
         logout.addActionListener(e -> {
-            int r = JOptionPane.showConfirmDialog(SwingUtilities.getWindowAncestor(this), "Are you sure you want to logout?", "Confirm Logout", JOptionPane.YES_NO_OPTION);
+            int r = JOptionPane.showConfirmDialog(SwingUtilities.getWindowAncestor(this),
+                    "Are you sure you want to logout?", 
+                    "Confirm Logout", JOptionPane.YES_NO_OPTION);
             if (r == JOptionPane.YES_OPTION) ctrl.logout();
         });
 

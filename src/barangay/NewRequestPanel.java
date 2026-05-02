@@ -15,6 +15,12 @@ public class NewRequestPanel extends JPanel {
         "Barangay Business Clearance"
     };
 
+    private static final String[] CIVIL_STATUSES = {
+        "Single", "Married", "Widowed", "Legally Separated"
+    };
+
+    private static final String[] SEXES = { "Male", "Female" };
+
     public NewRequestPanel(AppController ctrl) {
         this.ctrl = ctrl;
         setBackground(UITheme.BG_MAIN);
@@ -32,7 +38,8 @@ public class NewRequestPanel extends JPanel {
         JButton logout   = UITheme.logoutButton();
         settings.addActionListener(e -> ctrl.showGuestSettings());
         logout.addActionListener(e -> {
-            int r = JOptionPane.showConfirmDialog(SwingUtilities.getWindowAncestor(this), "Are you sure you want to logout?", "Confirm Logout", JOptionPane.YES_NO_OPTION);
+            int r = JOptionPane.showConfirmDialog(SwingUtilities.getWindowAncestor(this),
+                "Are you sure you want to logout?", "Confirm Logout", JOptionPane.YES_NO_OPTION);
             if (r == JOptionPane.YES_OPTION) ctrl.logout();
         });
         right.add(settings);
@@ -54,7 +61,7 @@ public class NewRequestPanel extends JPanel {
         topRow.setOpaque(false);
         topRow.add(backBtn);
 
-        // Request limit warning
+        // Request limit check
         User user = Database.getCurrentUser();
         int pending = Database.countPendingForUser(user.email);
         int limit   = Database.MAX_PENDING_REQUESTS;
@@ -67,7 +74,7 @@ public class NewRequestPanel extends JPanel {
                 new EmptyBorder(12, 16, 12, 16)));
             JLabel limitLbl = new JLabel(
                 "You have reached the maximum of " + limit +
-                " pending requests. Please wait for your existing requests to be processed before submitting a new one.");
+                " pending requests. Please wait for your existing requests to be processed.");
             limitLbl.setFont(new Font("Segoe UI", Font.PLAIN, 13));
             limitLbl.setForeground(new Color(120, 70, 0));
             limitCard.add(limitLbl, BorderLayout.CENTER);
@@ -84,100 +91,139 @@ public class NewRequestPanel extends JPanel {
         gbc.fill    = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
 
+        Font fieldFont = new Font("Segoe UI", Font.PLAIN, 14);
+        Color lockedBg = new Color(240, 242, 245);
+        Color lockedFg = new Color(90, 90, 100);
+
+        // Locked fields (from account)
         JTextField nameField    = UITheme.textField("Full Name");
         JTextField contactField = UITheme.textField("Contact Number");
         JTextField emailField   = UITheme.textField("Email Address");
-        JComboBox<String> typeBox = new JComboBox<>(REQUEST_TYPES);
-        typeBox.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        typeBox.setPreferredSize(new Dimension(0, 40));
 
-        JTextArea descArea = new JTextArea(4, 20);
-        descArea.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        nameField.setText(user.fullName);
+        contactField.setText(user.phone);
+        emailField.setText(user.email);
+
+        for (JTextField f : new JTextField[]{nameField, contactField, emailField}) {
+            f.setEditable(false);
+            f.setBackground(lockedBg);
+            f.setForeground(lockedFg);
+            f.setToolTipText("Pulled from your account info");
+        }
+
+        // Editable fields by guest
+        JComboBox<String> typeBox        = new JComboBox<>(REQUEST_TYPES);
+        JComboBox<String> civilStatusBox = new JComboBox<>(CIVIL_STATUSES);
+        JComboBox<String> sexBox         = new JComboBox<>(SEXES);
+
+        typeBox.setFont(fieldFont);
+        civilStatusBox.setFont(fieldFont);
+        sexBox.setFont(fieldFont);
+
+        JTextField birthdateField  = UITheme.textField("e.g. January 1, 2000");
+        JTextField birthplaceField = UITheme.textField("e.g. Cabanatuan City, Nueva Ecija");
+
+        JTextArea descArea = new JTextArea(3, 20);
+        descArea.setFont(fieldFont);
         descArea.setLineWrap(true);
         descArea.setWrapStyleWord(true);
         descArea.setBorder(BorderFactory.createCompoundBorder(
             new LineBorder(UITheme.BORDER, 1),
             new EmptyBorder(6, 8, 6, 8)));
 
-        // Pre-fill from current user and lock — only type and description are editable
-        nameField.setText(user.fullName);
-        contactField.setText(user.phone);
-        emailField.setText(user.email);
-
-        Color lockedBg = new Color(240, 242, 245);
-        nameField.setEditable(false);
-        nameField.setBackground(lockedBg);
-        nameField.setForeground(new Color(90, 90, 100));
-        nameField.setToolTipText("This is filled from your account info");
-        contactField.setEditable(false);
-        contactField.setBackground(lockedBg);
-        contactField.setForeground(new Color(90, 90, 100));
-        contactField.setToolTipText("This is filled from your account info");
-        emailField.setEditable(false);
-        emailField.setBackground(lockedBg);
-        emailField.setForeground(new Color(90, 90, 100));
-        emailField.setToolTipText("This is filled from your account info");
-
-        // Small lock hint label
-        JLabel lockHint = new JLabel("Name, contact and email are pulled from your account and cannot be changed here.");
+        // Lock hint + count
+        JLabel lockHint = new JLabel("Name, contact and email are pulled from your account.");
         lockHint.setFont(new Font("Segoe UI", Font.ITALIC, 11));
         lockHint.setForeground(new Color(100, 100, 120));
 
-        // Pending count info
         JLabel countLbl = new JLabel("Pending requests: " + pending + " / " + limit);
         countLbl.setFont(new Font("Segoe UI", Font.ITALIC, 12));
         countLbl.setForeground(pending == limit - 1 ? new Color(180, 80, 0) : UITheme.TEXT_MUTED);
 
-        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
-        card.add(lockHint, gbc);
+        // Layout
+        int row = 0;
 
-        gbc.gridy = 1; gbc.gridwidth = 2;
-        card.add(countLbl, gbc);
+        gbc.gridx = 0; gbc.gridy = row; gbc.gridwidth = 2;
+        card.add(lockHint, gbc); row++;
 
-        gbc.gridy = 2; gbc.gridwidth = 2;
-        card.add(labeled("Full Name", nameField), gbc);
+        gbc.gridy = row; gbc.gridwidth = 2;
+        card.add(countLbl, gbc); row++;
 
-        gbc.gridy = 3;
+        // Row: Full Name (full width)
+        gbc.gridy = row; gbc.gridwidth = 2;
+        card.add(labeled("Full Name", nameField), gbc); row++;
+
+        // Row: Contact | Email (side by side)
+        gbc.gridwidth = 1; gbc.weightx = 0.5;
+        gbc.gridx = 0; gbc.gridy = row;
         card.add(labeled("Contact Number", contactField), gbc);
-
-        gbc.gridy = 4;
+        gbc.gridx = 1;
         card.add(labeled("Email Address", emailField), gbc);
+        gbc.weightx = 1.0; row++;
 
-        gbc.gridy = 5;
-        card.add(labeled("Request Type", typeBox), gbc);
+        // Row: Civil Status | Sex
+        gbc.gridwidth = 1; gbc.weightx = 0.5;
+        gbc.gridx = 0; gbc.gridy = row;
+        card.add(labeled("Civil Status", civilStatusBox), gbc);
+        gbc.gridx = 1;
+        card.add(labeled("Sex", sexBox), gbc);
+        gbc.weightx = 1.0; row++;
 
-        gbc.gridy = 6;
-        card.add(labeled("Description", new JScrollPane(descArea) {{
+        // Row: Birthdate | Birthplace
+        gbc.gridwidth = 1; gbc.weightx = 0.5;
+        gbc.gridx = 0; gbc.gridy = row;
+        card.add(labeled("Birthdate", birthdateField), gbc);
+        gbc.gridx = 1;
+        card.add(labeled("Birthplace", birthplaceField), gbc);
+        gbc.weightx = 1.0; row++;
+
+        // Row: Request Type (full width)
+        gbc.gridx = 0; gbc.gridy = row; gbc.gridwidth = 2;
+        card.add(labeled("Request Type", typeBox), gbc); row++;
+
+        // Row: Description (full width)
+        gbc.gridy = row; gbc.gridwidth = 2;
+        card.add(labeled("Description / Reason for Request", new JScrollPane(descArea) {{
             setBorder(null);
-        }}), gbc);
+        }}), gbc); row++;
 
         // Submit button
         JButton submitBtn = UITheme.primaryButton("Submit Request");
         submitBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        gbc.gridy = 7; gbc.gridwidth = 2;
+        gbc.gridy = row; gbc.gridwidth = 2;
         card.add(submitBtn, gbc);
 
         submitBtn.addActionListener(e -> {
-            String name    = nameField.getText().trim();
-            String contact = contactField.getText().trim();
-            String email2  = emailField.getText().trim();
-            String type    = (String) typeBox.getSelectedItem();
-            String desc    = descArea.getText().trim();
+            String name      = nameField.getText().trim();
+            String contact   = contactField.getText().trim();
+            String email2    = emailField.getText().trim();
+            String type      = (String) typeBox.getSelectedItem();
+            String civil     = (String) civilStatusBox.getSelectedItem();
+            String sx        = (String) sexBox.getSelectedItem();
+            String birthdate = birthdateField.getText().trim();
+            String birthplace= birthplaceField.getText().trim();
+            String desc      = descArea.getText().trim();
 
-            if (name.isEmpty() || contact.isEmpty() || email2.isEmpty() || desc.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "All fields are required.",
+            if (birthdate.isEmpty() || birthplace.isEmpty() || desc.isEmpty()) {
+                JOptionPane.showMessageDialog(this,
+                    "Please fill in Birthdate, Birthplace, and Description.",
                     "Validation", JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
             int confirm = JOptionPane.showConfirmDialog(this,
                 "Are you sure you want to submit this request?\n\n"
-                + "Type : " + type + "\nName : " + name,
+                + "Type   : " + type + "\nName   : " + name,
                 "Confirm Submission", JOptionPane.YES_NO_OPTION,
                 JOptionPane.QUESTION_MESSAGE);
             if (confirm != JOptionPane.YES_OPTION) return;
 
             CertRequest req = new CertRequest(name, contact, email2, type, desc);
+            req.civilStatus = civil;
+            req.sex         = sx;
+            req.birthdate   = birthdate;
+            req.birthplace  = birthplace;
+
             Database.addRequest(req);
             JOptionPane.showMessageDialog(this,
                 "Request submitted successfully!\nRequest ID: #" + req.id,

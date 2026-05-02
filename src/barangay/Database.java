@@ -91,6 +91,21 @@ public class Database {
     public static User getCurrentUser() { return currentUser; }
     public static void logout()         { currentUser = null; }
 
+    public static String getUserAddress(String email) {
+        if (email == null || email.isEmpty()) return "";
+        String sql = "SELECT address FROM users WHERE email = ?";
+        try (Connection c = getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, email);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                String addr = rs.getString("address");
+                return addr != null ? addr : "";
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return "";
+    }
+
     // REQUESTS
 
     public static List<CertRequest> getAllRequests() {
@@ -155,7 +170,8 @@ public class Database {
 
     public static boolean addRequest(CertRequest req) {
         String sql = "INSERT INTO requests (requester_name, contact_number, email, "
-                   + "request_type, description) VALUES (?,?,?,?,?)";
+                   + "request_type, description, civil_status, sex, birthdate, birthplace) "
+                   + "VALUES (?,?,?,?,?,?,?,?,?)";
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(
                      sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -164,6 +180,10 @@ public class Database {
             ps.setString(3, req.email);
             ps.setString(4, req.requestType);
             ps.setString(5, req.description);
+            ps.setString(6, req.civilStatus);
+            ps.setString(7, req.sex);
+            ps.setString(8, req.birthdate);
+            ps.setString(9, req.birthplace);
             int rows = ps.executeUpdate();
             ResultSet keys = ps.getGeneratedKeys();
             if (keys.next()) req.id = keys.getInt(1);
@@ -171,6 +191,22 @@ public class Database {
             return rows > 0;
         } catch (SQLException e) {
             System.err.println("[DB] addRequest error: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public static boolean updateRequestAdminFields(int id, String officials, String purpose) {
+        String sql = "UPDATE requests SET barangay_officials=?, purpose=? WHERE id=?";
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, officials);
+            ps.setString(2, purpose);
+            ps.setInt(3, id);
+            int rows = ps.executeUpdate();
+            System.out.println("[DB] Admin fields updated id=" + id);
+            return rows > 0;
+        } catch (SQLException e) {
+            System.err.println("[DB] updateRequestAdminFields error: " + e.getMessage());
             return false;
         }
     }
@@ -390,10 +426,16 @@ public class Database {
             rs.getString("request_type"),
             rs.getString("description")
         );
-        req.id            = rs.getInt("id");
-        req.dateSubmitted = rs.getString("submitted_at");
-        req.rejectReason  = rs.getString("reject_reason");
-        String status     = rs.getString("status");
+        req.id                = rs.getInt("id");
+        req.dateSubmitted     = rs.getString("submitted_at");
+        req.rejectReason      = rs.getString("reject_reason");
+        req.civilStatus       = safe(rs.getString("civil_status"));
+        req.sex               = safe(rs.getString("sex"));
+        req.birthdate         = safe(rs.getString("birthdate"));
+        req.birthplace        = safe(rs.getString("birthplace"));
+        req.barangayOfficials = safe(rs.getString("barangay_officials"));
+        req.purpose           = safe(rs.getString("purpose"));
+        String status         = rs.getString("status");
         switch (status) {
             case "ACCEPTED": req.status = CertRequest.RequestStatus.ACCEPTED; break;
             case "REJECTED": req.status = CertRequest.RequestStatus.REJECTED; break;
@@ -401,4 +443,6 @@ public class Database {
         }
         return req;
     }
+
+    private static String safe(String s) { return s != null ? s : ""; }
 }

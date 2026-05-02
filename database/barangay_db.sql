@@ -1,3 +1,11 @@
+-- Run these if you already have the requests table
+-- ALTER TABLE requests ADD COLUMN civil_status VARCHAR(30) NOT NULL DEFAULT '' AFTER reject_reason;
+-- ALTER TABLE requests ADD COLUMN sex VARCHAR(10) NOT NULL DEFAULT '' AFTER civil_status;
+-- ALTER TABLE requests ADD COLUMN birthdate VARCHAR(50) NOT NULL DEFAULT '' AFTER sex;
+-- ALTER TABLE requests ADD COLUMN birthplace VARCHAR(150) NOT NULL DEFAULT '' AFTER birthdate;
+-- ALTER TABLE requests ADD COLUMN barangay_officials TEXT DEFAULT NULL AFTER birthplace;
+-- ALTER TABLE requests ADD COLUMN purpose TEXT DEFAULT NULL AFTER barangay_officials;
+
 -- ============================================================
 --  Barangay Bagong Sikat – Database Setup Script v2
 --  Run this in phpMyAdmin > SQL tab
@@ -34,7 +42,7 @@ CREATE TABLE IF NOT EXISTS requests (
     submitted_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- ── If upgrading from v1, run these ALTER statements ─────────
+-- ── For v1 users, run these ALTER statements ─────────
 -- ALTER TABLE users ADD COLUMN address VARCHAR(255) NOT NULL DEFAULT '' AFTER phone;
 -- ALTER TABLE requests ADD COLUMN reject_reason TEXT DEFAULT NULL AFTER status;
 -- ALTER TABLE requests MODIFY COLUMN status ENUM('PENDING','RESOLVED','REJECTED') NOT NULL DEFAULT 'PENDING';
