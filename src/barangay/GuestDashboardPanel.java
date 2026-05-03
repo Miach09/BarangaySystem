@@ -8,6 +8,9 @@ import java.util.List;
 public class GuestDashboardPanel extends JPanel {
 
     private final AppController ctrl;
+    private javax.swing.Timer autoRefreshTimer;
+    private int lastUnreadCount = -1;
+    private int lastRequestCount = -1;
 
     public GuestDashboardPanel(AppController ctrl) {
         this.ctrl = ctrl;
@@ -15,6 +18,48 @@ public class GuestDashboardPanel extends JPanel {
         setLayout(new BorderLayout());
         add(buildHeader(), BorderLayout.NORTH);
         add(buildBody(),   BorderLayout.CENTER);
+        startAutoRefresh();
+    }
+
+    private void startAutoRefresh() {
+        User user = Database.getCurrentUser();
+        if (user == null) return;
+
+        autoRefreshTimer = new javax.swing.Timer(5000, e -> {
+            if (!isShowing()) return;
+
+            // Check if unread count or request count changed
+            int newUnread   = Database.countUnreadNotifications(user.email);
+            int newReqCount = Database.getRequestsForUser(user.email).size();
+
+            boolean changed = (newUnread != lastUnreadCount)
+                           || (newReqCount != lastRequestCount);
+
+            lastUnreadCount   = newUnread;
+            lastRequestCount  = newReqCount;
+
+            if (changed) {
+                // Rebuild dashboard to reflect changes
+                removeAll();
+                setLayout(new BorderLayout());
+                add(buildHeader(), BorderLayout.NORTH);
+                add(buildBody(),   BorderLayout.CENTER);
+                revalidate();
+                repaint();
+                // Show toast if new notifications
+                if (newUnread > 0) {
+                    ToastNotification.show(
+                        (javax.swing.JFrame) javax.swing.SwingUtilities.getWindowAncestor(GuestDashboardPanel.this),
+                        user.email);
+                }
+            }
+        });
+        autoRefreshTimer.setRepeats(true);
+        autoRefreshTimer.start();
+    }
+
+    public void stopAutoRefresh() {
+        if (autoRefreshTimer != null) autoRefreshTimer.stop();
     }
 
     /** Draws a clean bell icon as an ImageIcon */

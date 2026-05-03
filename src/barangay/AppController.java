@@ -104,7 +104,20 @@ public class AppController {
         }
     }
 
+    private void stopCurrentTimer() {
+        java.awt.Component current = frame.getContentPane();
+        // Unwrap from scroll pane if needed
+        if (current instanceof JScrollPane) {
+            current = ((JScrollPane) current).getViewport().getView();
+        }
+        if (current instanceof AdminDashboardPanel)
+            ((AdminDashboardPanel) current).stopAutoRefresh();
+        if (current instanceof GuestDashboardPanel)
+            ((GuestDashboardPanel) current).stopAutoRefresh();
+    }
+
     private void setScreen(JPanel panel) {
+        stopCurrentTimer();
         if (panel instanceof LoginPanel || panel instanceof RegisterPanel) {
             frame.setContentPane(panel);
         } else {

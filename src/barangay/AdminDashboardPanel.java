@@ -16,6 +16,7 @@ public class AdminDashboardPanel extends JPanel {
     private JPanel listPanel;
     private JComboBox<String> sortBox;
     private JComboBox<String> filterBox;
+    private javax.swing.Timer autoRefreshTimer;
 
     public AdminDashboardPanel(AppController ctrl) {
         this.ctrl = ctrl;
@@ -23,6 +24,20 @@ public class AdminDashboardPanel extends JPanel {
         setLayout(new BorderLayout());
         add(buildHeader(), BorderLayout.NORTH);
         add(buildBody(),   BorderLayout.CENTER);
+        startAutoRefresh();
+    }
+
+    private void startAutoRefresh() {
+        autoRefreshTimer = new javax.swing.Timer(5000, e -> {
+            // Only refresh if this panel is still showing
+            if (isShowing()) refreshList();
+        });
+        autoRefreshTimer.setRepeats(true);
+        autoRefreshTimer.start();
+    }
+
+    public void stopAutoRefresh() {
+        if (autoRefreshTimer != null) autoRefreshTimer.stop();
     }
 
     private JPanel buildHeader() {
@@ -753,7 +768,7 @@ public class AdminDashboardPanel extends JPanel {
         formContent.add(secPersonal);
         formContent.add(Box.createVerticalStrut(8));
 
-        // Address — auto-filled from account, multi-line
+        // Address — auto-filled from account
         JLabel addrLbl = new JLabel("Address *");
         addrLbl.setFont(new Font("Segoe UI", Font.BOLD, 12));
         addrLbl.setAlignmentX(LEFT_ALIGNMENT);
@@ -839,37 +854,60 @@ public class AdminDashboardPanel extends JPanel {
         cancelBtn.setPreferredSize(new Dimension(100, 38));
         cancelBtn.addActionListener(e -> form.dispose());
 
-        printNowBtn.addActionListener(e -> {
-            // Collect and validate all required fields
-            final String address   = fldAddressArea.getText().trim();
-            final String civil     = fldCivilStat.getText().trim();
-            final String sex       = fldSex.getText().trim();
-            final String dob       = fldDOB.getText().trim();
-            final String pob       = fldPOB.getText().trim();
-            final String citizen   = fldCitizen.getText().trim();
-            final String purpose   = fldPurpose.getText().trim();
-            final String captain   = fldCaptain.getText().trim();
-            final String secretary = fldSecretary.getText().trim();
-
-            // Validation — all fields required
-            java.util.List<String> missing = new java.util.ArrayList<>();
-            if (address.isEmpty())   missing.add("Address");
-            if (civil.isEmpty())     missing.add("Civil Status");
-            if (sex.isEmpty())       missing.add("Sex");
-            if (dob.isEmpty())       missing.add("Date of Birth");
-            if (pob.isEmpty())       missing.add("Place of Birth");
-            if (citizen.isEmpty())   missing.add("Citizenship");
-            if (purpose.isEmpty())   missing.add("Purpose / Where to Use");
-            if (captain.isEmpty())   missing.add("Barangay Captain");
-            if (secretary.isEmpty()) missing.add("Secretary");
-
-            if (!missing.isEmpty()) {
+        // Helper to collect and validate fields
+        java.util.function.Supplier<String[]> collectFields = () -> {
+            String address2   = fldAddressArea.getText().trim();
+            String civil2     = fldCivilStat.getText().trim();
+            String sex2       = fldSex.getText().trim();
+            String dob2       = fldDOB.getText().trim();
+            String pob2       = fldPOB.getText().trim();
+            String citizen2   = fldCitizen.getText().trim();
+            String purpose2   = fldPurpose.getText().trim();
+            String captain2   = fldCaptain.getText().trim();
+            String secretary2 = fldSecretary.getText().trim();
+            java.util.List<String> missing2 = new java.util.ArrayList<>();
+            if (address2.isEmpty())   missing2.add("Address");
+            if (civil2.isEmpty())     missing2.add("Civil Status");
+            if (sex2.isEmpty())       missing2.add("Sex");
+            if (dob2.isEmpty())       missing2.add("Date of Birth");
+            if (pob2.isEmpty())       missing2.add("Place of Birth");
+            if (citizen2.isEmpty())   missing2.add("Citizenship");
+            if (purpose2.isEmpty())   missing2.add("Purpose / Where to Use");
+            if (captain2.isEmpty())   missing2.add("Barangay Captain");
+            if (secretary2.isEmpty()) missing2.add("Secretary");
+            if (!missing2.isEmpty()) {
                 JOptionPane.showMessageDialog(form,
-                    "Please fill in the following required fields:• "
-                    + String.join("• ", missing),
+                    "Please fill in the following required fields:\n• "
+                    + String.join("\n• ", missing2),
                     "Required Fields", JOptionPane.WARNING_MESSAGE);
-                return;
+                return null;
             }
+            return new String[]{address2, civil2, sex2, dob2, pob2, citizen2, purpose2, captain2, secretary2};
+        };
+
+        // Preview button
+        JButton previewBtn = new JButton("Preview");
+        previewBtn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        previewBtn.setPreferredSize(new Dimension(120, 38));
+        previewBtn.addActionListener(e -> {
+            String[] vals = collectFields.get();
+            if (vals == null) return;
+            showPreview(form, req, vals[0], vals[1], vals[2], vals[3], vals[4], vals[5], vals[6], vals[7], vals[8]);
+        });
+        fBtnRow.add(previewBtn);
+
+        printNowBtn.addActionListener(e -> {
+            String[] vals = collectFields.get();
+            if (vals == null) return;
+            final String address   = vals[0];
+            final String civil     = vals[1];
+            final String sex       = vals[2];
+            final String dob       = vals[3];
+            final String pob       = vals[4];
+            final String citizen   = vals[5];
+            final String purpose   = vals[6];
+            final String captain   = vals[7];
+            final String secretary = vals[8];
 
             form.dispose();
 
@@ -1095,6 +1133,189 @@ public class AdminDashboardPanel extends JPanel {
         }
         if (line.length() > 0) g.drawString(line.toString(), x, lineY);
         return lineY + fm.getDescent();
+    }
+
+
+    private void showPreview(JDialog parent, CertRequest req,
+            String address, String civil, String sex, String dob,
+            String pob, String citizen, String purpose, String captain, String secretary) {
+
+        JDialog preview = new JDialog(parent, "Certificate Preview", true);
+        preview.setSize(600, 780);
+        preview.setLocationRelativeTo(parent);
+        preview.setLayout(new BorderLayout());
+
+        // Canvas that renders the certificate
+        JPanel canvas = new JPanel() {
+            @Override protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+                int pw = getWidth() - 40;
+                int mx = 30;
+                int y  = 20;
+
+                // White paper background
+                g2.setColor(Color.WHITE);
+                g2.fillRect(20, 10, pw, getHeight() - 20);
+
+                // Outer double border
+                g2.setColor(new Color(0, 60, 150));
+                g2.setStroke(new BasicStroke(3f));
+                g2.drawRect(26, 16, pw - 12, getHeight() - 36);
+                g2.setStroke(new BasicStroke(1f));
+                g2.drawRect(32, 22, pw - 24, getHeight() - 48);
+                g2.setColor(Color.BLACK);
+
+                y = 52;
+                g2.setFont(new Font("Serif", Font.PLAIN, 9));
+                drawCentered(g2, "Republic of the Philippines", pw + 40, y); y += 13;
+                drawCentered(g2, "Municipality of Cabanatuan", pw + 40, y); y += 13;
+
+                g2.setFont(new Font("Serif", Font.BOLD, 18));
+                g2.setColor(new Color(0, 60, 150));
+                drawCentered(g2, "Barangay Bagong Sikat", pw + 40, y); y += 22;
+
+                g2.setFont(new Font("Serif", Font.ITALIC, 9));
+                g2.setColor(Color.DARK_GRAY);
+                drawCentered(g2, "OFFICE OF THE PUNONG BARANGAY", pw + 40, y); y += 16;
+
+                g2.setColor(new Color(0, 60, 150));
+                g2.setStroke(new BasicStroke(1.5f));
+                g2.drawLine(mx + 20, y, pw - mx + 20, y); y += 14;
+                g2.setStroke(new BasicStroke(1f));
+
+                g2.setFont(new Font("Serif", Font.BOLD, 20));
+                g2.setColor(Color.BLACK);
+                drawCentered(g2, req.requestType, pw + 40, y); y += 24;
+
+                g2.setFont(new Font("Serif", Font.BOLD + Font.ITALIC, 10));
+                g2.setColor(new Color(0, 60, 150));
+                drawCentered(g2, "\"BAGONG SIKAT, BAGONG PAG-ASA\"", pw + 40, y); y += 16;
+
+                g2.setFont(new Font("Serif", Font.PLAIN, 9));
+                g2.setColor(Color.BLACK);
+                String dateLine = req.dateSubmitted != null ? req.dateSubmitted : "";
+                FontMetrics fmD = g2.getFontMetrics();
+                g2.drawString(dateLine, pw - mx - fmD.stringWidth(dateLine) + 20, y); y += 20;
+
+                g2.setFont(new Font("Serif", Font.BOLD, 10));
+                drawCentered(g2, "TO WHOM IT MAY CONCERN:", pw + 40, y); y += 18;
+
+                g2.setFont(new Font("Serif", Font.PLAIN, 10));
+                String body1 = "    THIS IS TO CERTIFY that " + req.requesterName.toUpperCase()
+                    + " is a resident of BARANGAY BAGONG SIKAT, Cabanatuan City, for years, "
+                    + "with no criminal or any derogatory record of whatever nature as per the records "
+                    + "of this Barangay is concern.";
+                y = drawWrapped2(g2, body1, mx + 30, y, pw - (mx + 10)) + 12;
+
+                String body2 = "    This certification is issued upon the request of the above-named person for "
+                    + (purpose.isEmpty() ? "whatever legal purpose that it may served" : purpose) + ".";
+                y = drawWrapped2(g2, body2, mx + 30, y, pw - (mx + 10)) + 12;
+
+                String[] dateParts = req.dateSubmitted != null ? req.dateSubmitted.split("-") : new String[]{"", "", ""};
+                String issuedDate = dateParts.length >= 3
+                    ? "Issued this " + dateParts[2].split(" ")[0] + " day of " + getMonthName(dateParts[1]) + " " + dateParts[0]
+                    : "Issued this day";
+                y = drawWrapped2(g2, "    " + issuedDate + ", at the Office of the Punong Barangay"
+                    + " of Barangay Bagong Sikat, Cabanatuan City, Republic of the Philippines.", mx + 30, y, pw - (mx + 10)) + 20;
+
+                // Personal details section
+                g2.setColor(new Color(0, 60, 150));
+                g2.setStroke(new BasicStroke(1.5f));
+                g2.drawLine(mx + 20, y, pw - mx + 20, y); y += 14;
+                g2.setStroke(new BasicStroke(1f));
+                g2.setFont(new Font("Serif", Font.BOLD, 11));
+                g2.setColor(Color.BLACK);
+                drawCentered(g2, "PERSONAL DETAILS", pw + 40, y); y += 16;
+
+                int col1x = mx + 30, col2x = (pw + 40) / 2 + 10;
+                int lineH = 16;
+
+                g2.setFont(new Font("Serif", Font.BOLD, 9));
+                g2.drawString("Name:", col1x, y);
+                g2.setFont(new Font("Serif", Font.PLAIN, 9));
+                g2.drawString(req.requesterName, col1x + 52, y); y += lineH;
+
+                g2.setFont(new Font("Serif", Font.BOLD, 9));
+                g2.drawString("Address:", col1x, y);
+                g2.setFont(new Font("Serif", Font.PLAIN, 9));
+                int addrY = drawWrapped2(g2, address, col1x + 60, y - g2.getFontMetrics().getAscent(), pw - col1x - 20);
+                y = Math.max(y + lineH, addrY + 4);
+
+                java.util.List<String[]> details = new java.util.ArrayList<>();
+                details.add(new String[]{"Civil Status:", civil});
+                details.add(new String[]{"Sex:", sex});
+                details.add(new String[]{"Date of Birth:", dob});
+                details.add(new String[]{"Place of Birth:", pob});
+                details.add(new String[]{"Citizenship:", citizen.isEmpty() ? "Filipino" : citizen});
+                details.add(new String[]{"Purpose:", purpose});
+
+                int half = (details.size() + 1) / 2;
+                for (int i = 0; i < half; i++) {
+                    int rowY = y + i * lineH;
+                    g2.setFont(new Font("Serif", Font.BOLD, 9));
+                    g2.drawString(details.get(i)[0], col1x, rowY);
+                    g2.setFont(new Font("Serif", Font.PLAIN, 9));
+                    g2.drawString(details.get(i)[1], col1x + 80, rowY);
+                    if (i + half < details.size()) {
+                        g2.setFont(new Font("Serif", Font.BOLD, 9));
+                        g2.drawString(details.get(i + half)[0], col2x, rowY);
+                        g2.setFont(new Font("Serif", Font.PLAIN, 9));
+                        g2.drawString(details.get(i + half)[1], col2x + 80, rowY);
+                    }
+                }
+                y += half * lineH + 20;
+
+                // Signature block
+                g2.setColor(new Color(0, 60, 150));
+                g2.setStroke(new BasicStroke(1.5f));
+                g2.drawLine(mx + 20, y, pw - mx + 20, y); y += 20;
+                g2.setStroke(new BasicStroke(1f));
+                g2.setColor(Color.BLACK);
+
+                int sigLeft = mx + 40, sigRight = (pw + 40) / 2 + 30;
+                g2.setFont(new Font("Serif", Font.PLAIN, 9));
+                g2.drawString("Prepared by:", sigLeft, y);
+                g2.drawString("Approved by:", sigRight, y); y += 36;
+
+                g2.drawLine(sigLeft, y, sigLeft + 150, y);
+                g2.drawLine(sigRight, y, sigRight + 150, y); y += 12;
+
+                g2.setFont(new Font("Serif", Font.BOLD, 10));
+                String secName2 = secretary.isEmpty() ? "___________________" : secretary.toUpperCase();
+                String capName2 = captain.isEmpty()   ? "___________________" : captain.toUpperCase();
+                g2.drawString(secName2, sigLeft, y);
+                g2.drawString(capName2, sigRight, y); y += 12;
+
+                g2.setFont(new Font("Serif", Font.PLAIN, 9));
+                g2.drawString("Barangay Secretary", sigLeft, y);
+                g2.drawString("Punong Barangay", sigRight, y);
+
+                g2.dispose();
+            }
+        };
+        canvas.setPreferredSize(new Dimension(560, 740));
+        canvas.setBackground(new Color(200, 200, 210));
+
+        JScrollPane previewScroll = new JScrollPane(canvas);
+        previewScroll.setBorder(null);
+        preview.add(previewScroll, BorderLayout.CENTER);
+
+        // Bottom buttons
+        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 10));
+        btnRow.setBackground(new Color(245, 247, 250));
+        btnRow.setBorder(new MatteBorder(1, 0, 0, 0, UITheme.BORDER));
+
+        JButton closePreviewBtn = UITheme.secondaryButton("Close Preview");
+        closePreviewBtn.setPreferredSize(new Dimension(140, 36));
+        closePreviewBtn.addActionListener(e -> preview.dispose());
+
+        btnRow.add(closePreviewBtn);
+        preview.add(btnRow, BorderLayout.SOUTH);
+        preview.setVisible(true);
     }
 
     private void drawCentered(Graphics2D g, String text, int width, int y) {
