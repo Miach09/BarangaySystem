@@ -7,11 +7,9 @@ import javax.swing.JOptionPane;
 
 public class Database {
 
-    private static final String DB_URL  = "jdbc:mysql://localhost:3306/barangay_db"
-                                        + "?useSSL=false&serverTimezone=Asia/Manila"
-                                        + "&allowPublicKeyRetrieval=true";
+    private static final String DB_URL  = "jdbc:mysql://switchback.proxy.rlwy.net:16607/railway";
     private static final String DB_USER = "root";
-    private static final String DB_PASS = "";
+    private static final String DB_PASS = "BhtfvpjvjLWDWcqbhcpFkAtcSIWxTguE";
 
     public static final int MAX_PENDING_REQUESTS = 3;
 
