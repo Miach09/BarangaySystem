@@ -440,228 +440,53 @@ public class AdminRequestHistoryPanel extends JPanel {
         cancelBtn.setPreferredSize(new Dimension(100, 38));
         cancelBtn.addActionListener(e -> form.dispose());
 
-        printNowBtn.addActionListener(e -> {
-            // Collect and validate all required fields
-            final String address   = fldAddressArea.getText().trim();
-            final String civil     = fldCivilStat.getText().trim();
-            final String sex       = fldSex.getText().trim();
-            final String dob       = fldDOB.getText().trim();
-            final String pob       = fldPOB.getText().trim();
-            final String citizen   = fldCitizen.getText().trim();
-            final String purpose   = fldPurpose.getText().trim();
-            final String captain   = fldCaptain.getText().trim();
-            final String secretary = fldSecretary.getText().trim();
-
-            // Validation — all fields required
-            java.util.List<String> missing = new java.util.ArrayList<>();
-            if (address.isEmpty())   missing.add("Address");
-            if (civil.isEmpty())     missing.add("Civil Status");
-            if (sex.isEmpty())       missing.add("Sex");
-            if (dob.isEmpty())       missing.add("Date of Birth");
-            if (pob.isEmpty())       missing.add("Place of Birth");
-            if (citizen.isEmpty())   missing.add("Citizenship");
-            if (purpose.isEmpty())   missing.add("Purpose / Where to Use");
-            if (captain.isEmpty())   missing.add("Barangay Captain");
-            if (secretary.isEmpty()) missing.add("Secretary");
-
-            if (!missing.isEmpty()) {
+        // Collect + validate helper
+        java.util.function.Supplier<String[]> collectFields = () -> {
+            String address2   = fldAddressArea.getText().trim();
+            String civil2     = fldCivilStat.getText().trim();
+            String sex2       = fldSex.getText().trim();
+            String dob2       = fldDOB.getText().trim();
+            String pob2       = fldPOB.getText().trim();
+            String citizen2   = fldCitizen.getText().trim();
+            String purpose2   = fldPurpose.getText().trim();
+            String captain2   = fldCaptain.getText().trim();
+            String secretary2 = fldSecretary.getText().trim();
+            java.util.List<String> missing2 = new java.util.ArrayList<>();
+            if (address2.isEmpty())   missing2.add("Address");
+            if (civil2.isEmpty())     missing2.add("Civil Status");
+            if (sex2.isEmpty())       missing2.add("Sex");
+            if (dob2.isEmpty())       missing2.add("Date of Birth");
+            if (pob2.isEmpty())       missing2.add("Place of Birth");
+            if (citizen2.isEmpty())   missing2.add("Citizenship");
+            if (purpose2.isEmpty())   missing2.add("Purpose / Where to Use");
+            if (captain2.isEmpty())   missing2.add("Barangay Captain");
+            if (secretary2.isEmpty()) missing2.add("Secretary");
+            if (!missing2.isEmpty()) {
                 JOptionPane.showMessageDialog(form,
-                    "Please fill in the following required fields:• "
-                    + String.join("• ", missing),
+                    "Please fill in the following required fields:\n\u2022 "
+                    + String.join("\n\u2022 ", missing2),
                     "Required Fields", JOptionPane.WARNING_MESSAGE);
-                return;
+                return null;
             }
+            return new String[]{address2, civil2, sex2, dob2, pob2, citizen2, purpose2, captain2, secretary2};
+        };
 
+        // Preview button
+        JButton previewBtn = new JButton("Preview");
+        previewBtn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        previewBtn.setPreferredSize(new Dimension(120, 38));
+        previewBtn.addActionListener(e -> {
+            String[] vals = collectFields.get();
+            if (vals == null) return;
+            showPreview(form, req, vals[0], vals[1], vals[2], vals[3], vals[4], vals[5], vals[6], vals[7], vals[8]);
+        });
+        fBtnRow.add(previewBtn);
+
+        printNowBtn.addActionListener(e -> {
+            String[] vals = collectFields.get();
+            if (vals == null) return;
             form.dispose();
-
-            PrinterJob job = PrinterJob.getPrinterJob();
-            job.setJobName("Certificate - " + req.requestType);
-
-            // Portrait page setup
-            PageFormat pf = job.defaultPage();
-            pf.setOrientation(PageFormat.PORTRAIT);
-
-            job.setPrintable((graphics, pageFormat, pageIndex) -> {
-                if (pageIndex > 0) return Printable.NO_SUCH_PAGE;
-                Graphics2D g2 = (Graphics2D) graphics;
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-                g2.translate(pageFormat.getImageableX(), pageFormat.getImageableY());
-
-                int pw = (int) pageFormat.getImageableWidth();
-                int ph = (int) pageFormat.getImageableHeight();
-                int mx = 30;
-                int y  = 0;
-
-                // Outer double border
-                g2.setColor(new Color(0, 60, 150));
-                g2.setStroke(new BasicStroke(3f));
-                g2.drawRect(6, 6, pw - 12, ph - 12);
-                g2.setStroke(new BasicStroke(1f));
-                g2.drawRect(12, 12, pw - 24, ph - 24);
-                g2.setColor(Color.BLACK);
-
-                // Header
-                y = 42;
-                g2.setFont(new Font("Serif", Font.PLAIN, 9));
-                drawCentered(g2, "Republic of the Philippines", pw, y); y += 13;
-                drawCentered(g2, "Municipality of Cabanatuan", pw, y); y += 13;
-
-                g2.setFont(new Font("Serif", Font.BOLD, 18));
-                g2.setColor(new Color(0, 60, 150));
-                drawCentered(g2, "Barangay Bagong Sikat", pw, y); y += 22;
-
-                g2.setFont(new Font("Serif", Font.ITALIC, 9));
-                g2.setColor(Color.DARK_GRAY);
-                drawCentered(g2, "OFFICE OF THE PUNONG BARANGAY", pw, y); y += 16;
-
-                // Thin rule
-                g2.setColor(new Color(0, 60, 150));
-                g2.setStroke(new BasicStroke(1.5f));
-                g2.drawLine(mx, y, pw - mx, y); y += 14;
-                g2.setStroke(new BasicStroke(1f));
-                g2.setColor(Color.BLACK);
-
-                // Certificate type title
-                g2.setFont(new Font("Serif", Font.BOLD, 20));
-                drawCentered(g2, req.requestType, pw, y); y += 24;
-
-                // Motto line
-                g2.setFont(new Font("Serif", Font.BOLD + Font.ITALIC, 10));
-                g2.setColor(new Color(0, 60, 150));
-                drawCentered(g2, "\"BAGONG SIKAT, BAGONG PAG-ASA\"", pw, y); y += 10;
-
-                // Date line right-aligned
-                g2.setFont(new Font("Serif", Font.PLAIN, 9));
-                g2.setColor(Color.BLACK);
-                String dateLine = req.dateSubmitted;
-                FontMetrics fmDate = g2.getFontMetrics();
-                g2.drawString(dateLine, pw - mx - fmDate.stringWidth(dateLine), y); y += 20;
-
-                // Body text
-                g2.setFont(new Font("Serif", Font.BOLD, 10));
-                drawCentered(g2, "TO WHOM IT MAY CONCERN:", pw, y); y += 18;
-
-                g2.setFont(new Font("Serif", Font.PLAIN, 10));
-                String bodyText = "    THIS IS TO CERTIFY that " + req.requesterName.toUpperCase()
-                    + " is a resident of BARANGAY BAGONG SIKAT, Cabanatuan City, for"
-                    + " years, with no criminal or any derogatory record of whatever nature as"
-                    + " per the records of this Barangay is concern.";
-                y = drawWrapped2(g2, bodyText, mx + 10, y, pw - (mx + 10) * 2) + 12;
-
-                g2.setFont(new Font("Serif", Font.PLAIN, 10));
-                String body2 = "    This certification is issued upon the request of the above-named person for "
-                    + (purpose.isEmpty() ? "whatever legal purpose that it may served" : purpose) + ".";
-                y = drawWrapped2(g2, body2, mx + 10, y, pw - (mx + 10) * 2) + 12;
-
-                // Issued line
-                String[] dateParts = req.dateSubmitted.split("-");
-                String issuedDate = dateParts.length >= 3
-                    ? "Issued this " + dateParts[2].split(" ")[0] + " day of " + getMonthName(dateParts[1]) + " " + dateParts[0]
-                    : "Issued this day of " + req.dateSubmitted;
-                g2.setFont(new Font("Serif", Font.PLAIN, 10));
-                y = drawWrapped2(g2, "    " + issuedDate + ", at the Office of the Punong Barangay"
-                    + " of Barangay Bagong Sikat, Cabanatuan City, Republic of the Philippines.", mx + 10, y, pw - (mx + 10) * 2) + 20;
-
-                // PERSONAL DETAILS section
-                g2.setColor(new Color(0, 60, 150));
-                g2.setStroke(new BasicStroke(1.5f));
-                g2.drawLine(mx, y, pw - mx, y); y += 14;
-                g2.setStroke(new BasicStroke(1f));
-
-                g2.setFont(new Font("Serif", Font.BOLD, 11));
-                g2.setColor(Color.BLACK);
-                drawCentered(g2, "PERSONAL DETAILS", pw, y); y += 16;
-
-                // Two-column personal details
-                int col1x = mx + 10, col2x = pw / 2 + 10;
-                int lineH = 16;
-                g2.setFont(new Font("Serif", Font.PLAIN, 9));
-
-                java.util.List<String[]> details = new java.util.ArrayList<>();
-                // Address spans full width on its own line first
-                g2.setFont(new Font("Serif", Font.BOLD, 9));
-                g2.drawString("Name:", col1x, y);
-                g2.setFont(new Font("Serif", Font.PLAIN, 9));
-                g2.drawString(req.requesterName, col1x + 52, y); y += lineH;
-
-                g2.setFont(new Font("Serif", Font.BOLD, 9));
-                g2.drawString("Address:", col1x, y);
-                g2.setFont(new Font("Serif", Font.PLAIN, 9));
-                // Wrap address across full width
-                int addrY = drawWrapped2(g2, address, col1x + 60, y - g2.getFontMetrics().getAscent(), pw - col1x - 60 - mx);
-                y = Math.max(y + lineH, addrY + 4);
-
-                details.add(new String[]{"Civil Status:", civil});
-                details.add(new String[]{"Sex:", sex});
-                details.add(new String[]{"Date of Birth:", dob});
-                details.add(new String[]{"Place of Birth:", pob});
-                details.add(new String[]{"Citizenship:", citizen.isEmpty() ? "Filipino" : citizen});
-                details.add(new String[]{"Purpose:", purpose});
-
-                int half = (details.size() + 1) / 2;
-                for (int i = 0; i < half; i++) {
-                    int rowY = y + i * lineH;
-                    // Left column
-                    g2.setFont(new Font("Serif", Font.BOLD, 9));
-                    g2.drawString(details.get(i)[0], col1x, rowY);
-                    g2.setFont(new Font("Serif", Font.PLAIN, 9));
-                    g2.drawString(details.get(i)[1], col1x + 80, rowY);
-                    // Right column
-                    if (i + half < details.size()) {
-                        g2.setFont(new Font("Serif", Font.BOLD, 9));
-                        g2.drawString(details.get(i + half)[0], col2x, rowY);
-                        g2.setFont(new Font("Serif", Font.PLAIN, 9));
-                        g2.drawString(details.get(i + half)[1], col2x + 80, rowY);
-                    }
-                }
-                y += half * lineH + 20;
-
-                // Signature block
-                g2.setColor(new Color(0, 60, 150));
-                g2.setStroke(new BasicStroke(1.5f));
-                g2.drawLine(mx, y, pw - mx, y); y += 20;
-                g2.setStroke(new BasicStroke(1f));
-                g2.setColor(Color.BLACK);
-
-                // Prepared by (left) | Approved by (right)
-                int sigLeft = mx + 20, sigRight = pw / 2 + 30;
-
-                g2.setFont(new Font("Serif", Font.PLAIN, 9));
-                g2.drawString("Prepared by:", sigLeft, y);
-                g2.drawString("Approved by:", sigRight, y); y += 36;
-
-                // Signature lines
-                g2.drawLine(sigLeft, y, sigLeft + 150, y);
-                g2.drawLine(sigRight, y, sigRight + 150, y); y += 12;
-
-                g2.setFont(new Font("Serif", Font.BOLD, 10));
-                String secName = secretary.isEmpty() ? "___________________" : secretary.toUpperCase();
-                String capName = captain.isEmpty()   ? "___________________" : captain.toUpperCase();
-                g2.drawString(secName, sigLeft, y);
-                g2.drawString(capName, sigRight, y); y += 12;
-
-                g2.setFont(new Font("Serif", Font.PLAIN, 9));
-                g2.drawString("Barangay Secretary", sigLeft, y);
-                g2.drawString("Punong Barangay", sigRight, y); y += 20;
-
-                // Footer note
-                g2.setFont(new Font("Serif", Font.ITALIC, 8));
-                g2.setColor(Color.GRAY);
-                drawCentered(g2, "Note: valid only for 6 months from the date issued. Not valid without dry seal.", pw, ph - 20);
-                g2.setFont(new Font("Serif", Font.PLAIN, 8));
-                g2.drawString("Request ID: #" + req.id, mx, ph - 20);
-
-                return Printable.PAGE_EXISTS;
-            }, pf);
-
-            if (job.printDialog()) {
-                try { job.print(); }
-                catch (PrinterException ex) {
-                    JOptionPane.showMessageDialog(this, "Print failed: " + ex.getMessage(),
-                        "Print Error", JOptionPane.ERROR_MESSAGE);
-                }
-            }
+            doPrint(req, vals[0], vals[1], vals[2], vals[3], vals[4], vals[5], vals[6], vals[7], vals[8]);
         });
 
         fBtnRow.add(printNowBtn);
@@ -700,6 +525,446 @@ public class AdminRequestHistoryPanel extends JPanel {
     }
 
 
+
+    private void showPreview(JDialog parent, CertRequest req,
+            String address, String civil, String sex, String dob,
+            String pob, String citizen, String purpose, String captain, String secretary) {
+
+        JDialog preview = new JDialog(parent, "Certificate Preview", true);
+        preview.setSize(700, 780);
+        preview.setLocationRelativeTo(parent);
+        preview.setLayout(new BorderLayout());
+
+        // Scale factor — 1.0 = fit to window width (A4 ratio)
+        final float[] scale = {1.0f};
+
+        // The certificate canvas
+        final int CERT_W = 640;  // logical certificate width in pixels
+        final int CERT_H = 820;  // logical certificate height
+
+        JPanel canvas = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+
+                int sw = Math.round(CERT_W * scale[0]);
+                int sh = Math.round(CERT_H * scale[0]);
+                int ox = Math.max(0, (getWidth()  - sw) / 2);
+                int oy = 20;
+
+                // Drop shadow
+                g2.setColor(new Color(0, 0, 0, 40));
+                g2.fillRect(ox + 4, oy + 4, sw, sh);
+
+                // Paper background
+                g2.setColor(Color.WHITE);
+                g2.fillRect(ox, oy, sw, sh);
+
+                // Scale everything to the certificate coordinate space
+                g2.translate(ox, oy);
+                g2.scale(scale[0], scale[0]);
+
+                drawCertificate(g2, req, address, civil, sex, dob, pob, citizen, purpose, captain, secretary, CERT_W, CERT_H);
+                g2.dispose();
+            }
+
+            @Override public Dimension getPreferredSize() {
+                return new Dimension(
+                    Math.round(CERT_W * scale[0]) + 40,
+                    Math.round(CERT_H * scale[0]) + 60);
+            }
+        };
+        canvas.setBackground(new Color(180, 185, 195));
+
+        JScrollPane scroll = new JScrollPane(canvas);
+        scroll.setBorder(null);
+        scroll.getVerticalScrollBar().setUnitIncrement(16);
+        scroll.setBackground(new Color(180, 185, 195));
+        preview.add(scroll, BorderLayout.CENTER);
+
+        //  Toolbar: zoom + buttons 
+        JPanel toolbar = new JPanel(new BorderLayout(0, 0));
+        toolbar.setBackground(new Color(50, 50, 55));
+        toolbar.setBorder(new EmptyBorder(8, 16, 8, 16));
+
+        // Zoom controls (left)
+        JPanel zoomPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        zoomPanel.setOpaque(false);
+
+        JLabel zoomLbl = new JLabel("Zoom:");
+        zoomLbl.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        zoomLbl.setForeground(Color.WHITE);
+
+        JButton zoomOut = new JButton("−");
+        JButton zoomIn  = new JButton("+");
+        JLabel  zoomPct = new JLabel("100%");
+        zoomPct.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        zoomPct.setForeground(Color.WHITE);
+        zoomPct.setPreferredSize(new Dimension(44, 24));
+        zoomPct.setHorizontalAlignment(SwingConstants.CENTER);
+
+        for (JButton zb : new JButton[]{zoomOut, zoomIn}) {
+            zb.setFont(new Font("Segoe UI", Font.BOLD, 14));
+            zb.setPreferredSize(new Dimension(32, 28));
+            zb.setFocusPainted(false);
+            zb.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        }
+
+        zoomOut.addActionListener(e2 -> {
+            if (scale[0] > 0.5f) {
+                scale[0] = Math.round((scale[0] - 0.1f) * 10) / 10.0f;
+                zoomPct.setText(Math.round(scale[0] * 100) + "%");
+                canvas.revalidate(); canvas.repaint();
+            }
+        });
+        zoomIn.addActionListener(e2 -> {
+            if (scale[0] < 2.0f) {
+                scale[0] = Math.round((scale[0] + 0.1f) * 10) / 10.0f;
+                zoomPct.setText(Math.round(scale[0] * 100) + "%");
+                canvas.revalidate(); canvas.repaint();
+            }
+        });
+
+        zoomPanel.add(zoomLbl);
+        zoomPanel.add(zoomOut);
+        zoomPanel.add(zoomPct);
+        zoomPanel.add(zoomIn);
+        toolbar.add(zoomPanel, BorderLayout.WEST);
+
+        // Action buttons (right)
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        btnPanel.setOpaque(false);
+
+        // Print button
+        final Color PB = new Color(30, 100, 210), PH = new Color(20, 80, 180);
+        JButton printFromPreview = new JButton("Print") {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                Color bg = getModel().isPressed() ? PH.darker() : getModel().isRollover() ? PH : PB;
+                g2.setColor(bg); g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                g2.dispose(); super.paintComponent(g);
+            }
+            @Override protected void paintBorder(Graphics g) {}
+        };
+        printFromPreview.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        printFromPreview.setForeground(Color.WHITE);
+        printFromPreview.setOpaque(false); printFromPreview.setContentAreaFilled(false);
+        printFromPreview.setBorderPainted(false); printFromPreview.setFocusPainted(false);
+        printFromPreview.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        printFromPreview.setPreferredSize(new Dimension(110, 34));
+
+        printFromPreview.addActionListener(e2 -> {
+            preview.dispose();
+            doPrint(req, address, civil, sex, dob, pob, citizen, purpose, captain, secretary);
+        });
+
+        JButton closeBtn = new JButton("Close");
+        closeBtn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        closeBtn.setForeground(new Color(220, 220, 220));
+        closeBtn.setOpaque(false); closeBtn.setContentAreaFilled(false);
+        closeBtn.setBorderPainted(false); closeBtn.setFocusPainted(false);
+        closeBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        closeBtn.setPreferredSize(new Dimension(80, 34));
+        closeBtn.addActionListener(e2 -> preview.dispose());
+
+        btnPanel.add(printFromPreview);
+        btnPanel.add(closeBtn);
+        toolbar.add(btnPanel, BorderLayout.EAST);
+
+        preview.add(toolbar, BorderLayout.SOUTH);
+        preview.setVisible(true);
+    }
+
+    /** Draws the full certificate onto any Graphics2D in a 0,0 -> certW,certH coordinate space */
+    private void drawCertificate(Graphics2D g2, CertRequest req,
+            String address, String civil, String sex, String dob,
+            String pob, String citizen, String purpose, String captain, String secretary,
+            int certW, int certH) {
+
+        Color DARK_BLUE  = new Color(0,  50, 130);
+        Color MED_BLUE   = new Color(10, 80, 170);
+        Color LIGHT_BLUE = new Color(220, 230, 248);
+        Color GOLD       = new Color(180, 140, 30);
+        int   mx         = 40;    // left/right margin
+        int   labelW     = 92;    // fixed label column — values stay aligned
+        int   lineH      = 18;    // row height for personal details
+        int   y;
+
+        //  Decorative outer frame 
+        int corner = 16;
+        g2.setColor(DARK_BLUE);
+        int[][] corners = {{4,4},{certW-4,4},{4,certH-4},{certW-4,certH-4}};
+        for (int[] c : corners) g2.fillRect(c[0]-corner/2, c[1]-corner/2, corner, corner);
+
+        g2.setStroke(new BasicStroke(3.5f));
+        g2.drawRect(4, 4, certW-8, certH-8);
+        g2.setStroke(new BasicStroke(1f));
+        g2.drawRect(12, 12, certW-24, certH-24);
+
+        g2.setColor(GOLD);
+        g2.setStroke(new BasicStroke(0.8f));
+        g2.drawRect(17, 17, certW-34, certH-34);
+        g2.setStroke(new BasicStroke(1f));
+        g2.setColor(DARK_BLUE);
+
+        // Watermark logo centered in body
+        try {
+            java.net.URL logoUrl = getClass().getResource("/barangay/brgyLogo.png");
+            if (logoUrl != null) {
+                java.awt.image.BufferedImage logo = javax.imageio.ImageIO.read(logoUrl);
+                int logoSize = 500;
+                int logoX = (certW - logoSize) / 2;
+                int logoY = (certH - logoSize) / 2 + 40; // slightly below center
+                // Draw at low opacity using AlphaComposite
+                java.awt.Composite orig = g2.getComposite();
+                g2.setComposite(java.awt.AlphaComposite.getInstance(
+                    java.awt.AlphaComposite.SRC_OVER, 0.08f));
+                g2.drawImage(logo, logoX, logoY, logoSize, logoSize, null);
+                g2.setComposite(orig);
+            }
+        } catch (Exception ex) { /* skip if logo unavailable */ }
+
+        //  Header band 
+        g2.setColor(LIGHT_BLUE);
+        g2.fillRect(17, 17, certW-34, 96);
+        g2.setColor(DARK_BLUE);
+        g2.setStroke(new BasicStroke(1f));
+        g2.drawLine(17, 113, certW-17, 113);
+        g2.setStroke(new BasicStroke(1f));
+
+        y = 42;
+        g2.setColor(new Color(60, 60, 80));
+        g2.setFont(new Font("Serif", Font.PLAIN, 8));
+        drawCentered(g2, "Republic of the Philippines", certW, y); y += 12;
+        drawCentered(g2, "Municipality of Cabanatuan City", certW, y); y += 15;
+
+        g2.setFont(new Font("Serif", Font.BOLD, 22));
+        g2.setColor(DARK_BLUE);
+        drawCentered(g2, "Barangay Bagong Sikat", certW, y); y += 22;
+
+        g2.setFont(new Font("Serif", Font.ITALIC, 8));
+        g2.setColor(new Color(80, 80, 100));
+        drawCentered(g2, "OFFICE OF THE PUNONG BARANGAY", certW, y);
+
+        //  Gold rule 
+        y = 120;
+        g2.setColor(GOLD);
+        g2.setStroke(new BasicStroke(2f));
+        g2.drawLine(mx, y, certW - mx, y);
+        g2.setStroke(new BasicStroke(1f));
+        y += 26;
+
+        //  Certificate title 
+        g2.setFont(new Font("Serif", Font.BOLD, 18));
+        g2.setColor(DARK_BLUE);
+        drawCentered(g2, req.requestType.toUpperCase(), certW, y);
+        FontMetrics fmT = g2.getFontMetrics();
+        int titleW = fmT.stringWidth(req.requestType.toUpperCase());
+        int titleX = (certW - titleW) / 2;
+        y += 5;
+        g2.setColor(GOLD);
+        g2.setStroke(new BasicStroke(1.5f));
+        g2.drawLine(titleX, y, titleX + titleW, y);
+        g2.setStroke(new BasicStroke(1f));
+        y += 14;
+
+        // Motto
+        g2.setFont(new Font("Serif", Font.BOLD + Font.ITALIC, 9));
+        g2.setColor(MED_BLUE);
+        drawCentered(g2, "\u201cBAGONG SIKAT, BAGONG PAG-ASA\u201d", certW, y); y += 10;
+
+        // Date right-aligned
+        g2.setFont(new Font("Serif", Font.PLAIN, 8));
+        g2.setColor(new Color(80, 80, 80));
+        String dateLine = req.dateSubmitted != null ? req.dateSubmitted : "";
+        FontMetrics fmD = g2.getFontMetrics();
+        g2.drawString(dateLine, certW - mx - fmD.stringWidth(dateLine), y); y += 22;
+
+        //  Body text 
+        g2.setFont(new Font("Serif", Font.BOLD, 10));
+        g2.setColor(Color.BLACK);
+        drawCentered(g2, "TO WHOM IT MAY CONCERN:", certW, y); y += 18;
+
+        g2.setFont(new Font("Serif", Font.PLAIN, 10));
+        String body1 = "        THIS IS TO CERTIFY that " + req.requesterName.toUpperCase()
+            + " is a resident of BARANGAY BAGONG SIKAT, Cabanatuan City, Nueva Ecija, for years, "
+            + "with no criminal or any derogatory record of whatever nature as per the records "
+            + "of this Barangay is concern.";
+        y = drawWrapped2(g2, body1, mx, y, certW - mx * 2) + 14;
+
+        String body2 = "        This certification is issued upon the request of the above-named person for "
+            + (purpose.isEmpty() ? "whatever legal purpose that it may served" : purpose) + ".";
+        y = drawWrapped2(g2, body2, mx, y, certW - mx * 2) + 14;
+
+        String[] dp = req.dateSubmitted != null ? req.dateSubmitted.split("-") : new String[]{"","",""};
+        String issuedDate = dp.length >= 3
+            ? "Issued this " + dp[2].split(" ")[0] + " day of " + getMonthName(dp[1]) + " " + dp[0]
+            : "Issued this day";
+        y = drawWrapped2(g2, "        " + issuedDate
+            + ", at the Office of the Punong Barangay of Barangay Bagong Sikat,"
+            + " Cabanatuan City, Nueva Ecija, Republic of the Philippines.",
+            mx, y, certW - mx * 2) + 22;
+
+        // Personal Details section
+        g2.setColor(LIGHT_BLUE);
+        g2.fillRect(mx, y - 2, certW - mx * 2, 20);
+        g2.setColor(DARK_BLUE);
+        g2.setStroke(new BasicStroke(0.8f));
+        g2.drawRect(mx, y - 2, certW - mx * 2, 20);
+        g2.setStroke(new BasicStroke(1f));
+        g2.setFont(new Font("Serif", Font.BOLD, 10));
+        drawCentered(g2, "PERSONAL DETAILS", certW, y + 13);
+        y += 28;
+
+        int valX  = mx + labelW;
+        int col2x = certW / 2 + 10;
+        int val2X = col2x + labelW;
+
+        // Name — full width
+        g2.setFont(new Font("Serif", Font.BOLD, 9));
+        g2.setColor(new Color(40, 40, 40));
+        g2.drawString("Name:", mx, y);
+        g2.setFont(new Font("Serif", Font.PLAIN, 9));
+        g2.setColor(Color.BLACK);
+        g2.drawString(req.requesterName, valX, y); y += lineH;
+
+        // Address — full width wrapped
+        g2.setFont(new Font("Serif", Font.BOLD, 9));
+        g2.setColor(new Color(40, 40, 40));
+        g2.drawString("Address:", mx, y);
+        g2.setFont(new Font("Serif", Font.PLAIN, 9));
+        g2.setColor(Color.BLACK);
+        int addrBottom = drawWrapped2(g2, address, valX, y - g2.getFontMetrics().getAscent(), certW - valX - mx);
+        y = Math.max(y + lineH, addrBottom + 4);
+
+        // Thin separator
+        g2.setColor(new Color(200, 210, 230));
+        g2.setStroke(new BasicStroke(0.5f));
+        g2.drawLine(mx, y - 2, certW - mx, y - 2);
+        g2.setStroke(new BasicStroke(1f));
+        g2.setColor(Color.BLACK);
+
+        // Two-column rows
+        String[][] rows = {
+            {"Civil Status:", civil,    "Place of Birth:",  pob},
+            {"Sex:",          sex,      "Citizenship:",     citizen.isEmpty() ? "Filipino" : citizen},
+            {"Date of Birth:", dob,     "Purpose:",         purpose},
+        };
+        for (String[] row : rows) {
+            g2.setFont(new Font("Serif", Font.BOLD, 9));
+            g2.setColor(new Color(40, 40, 40));
+            g2.drawString(row[0], mx, y);
+            g2.setFont(new Font("Serif", Font.PLAIN, 9));
+            g2.setColor(Color.BLACK);
+            g2.drawString(row[1], valX, y);
+            g2.setFont(new Font("Serif", Font.BOLD, 9));
+            g2.setColor(new Color(40, 40, 40));
+            g2.drawString(row[2], col2x, y);
+            g2.setFont(new Font("Serif", Font.PLAIN, 9));
+            g2.setColor(Color.BLACK);
+            if (row[2].equals("Purpose:")) {
+                drawWrapped2(g2, row[3], val2X, y - g2.getFontMetrics().getAscent(), certW - val2X - mx);
+            } else {
+                g2.drawString(row[3], val2X, y);
+            }
+            y += lineH;
+        }
+        y += 20;
+
+        // Signature block 
+        g2.setColor(GOLD);
+        g2.setStroke(new BasicStroke(1.5f));
+        g2.drawLine(mx, y, certW - mx, y); y += 6;
+        g2.setColor(LIGHT_BLUE);
+        g2.fillRect(mx, y, certW - mx * 2, 12);
+        g2.setColor(DARK_BLUE);
+        g2.setStroke(new BasicStroke(0.8f));
+        g2.drawLine(mx, y + 12, certW - mx, y + 12);
+        g2.setStroke(new BasicStroke(1f));
+        y += 28;
+
+        int sigLeft  = mx + 20;
+        int sigRight = certW / 2 + 40;
+
+        g2.setFont(new Font("Serif", Font.PLAIN, 9));
+        g2.setColor(new Color(80, 80, 80));
+        g2.drawString("Prepared by:", sigLeft, y);
+        g2.drawString("Approved by:", sigRight, y); y += 44;
+
+        g2.setColor(DARK_BLUE);
+        g2.setStroke(new BasicStroke(1f));
+        g2.drawLine(sigLeft, y, sigLeft + 160, y);
+        g2.drawLine(sigRight, y, sigRight + 160, y); y += 13;
+
+        g2.setFont(new Font("Serif", Font.BOLD, 10));
+        g2.setColor(DARK_BLUE);
+        g2.drawString(secretary.isEmpty() ? "___________________" : secretary.toUpperCase(), sigLeft, y);
+        g2.drawString(captain.isEmpty()   ? "___________________" : captain.toUpperCase(), sigRight, y); y += 13;
+
+        g2.setFont(new Font("Serif", Font.PLAIN, 9));
+        g2.setColor(new Color(60, 60, 60));
+        g2.drawString("Barangay Secretary", sigLeft, y);
+        g2.drawString("Punong Barangay", sigRight, y);
+
+        // Footer 
+        g2.setColor(LIGHT_BLUE);
+        g2.fillRect(17, certH - 38, certW - 34, 20);
+        g2.setColor(DARK_BLUE);
+        g2.setStroke(new BasicStroke(0.8f));
+        g2.drawRect(17, certH - 38, certW - 34, 20);
+        g2.setStroke(new BasicStroke(1f));
+
+        g2.setFont(new Font("Serif", Font.ITALIC, 7));
+        g2.setColor(new Color(60, 60, 100));
+        drawCentered(g2, "Note: valid only for 6 months from the date issued. Not valid without dry seal.", certW, certH - 23);
+        g2.setFont(new Font("Serif", Font.PLAIN, 7));
+        g2.setColor(new Color(100, 100, 120));
+    }
+
+
+    /** Executes the actual print job */
+    private void doPrint(CertRequest req,
+            String address, String civil, String sex, String dob,
+            String pob, String citizen, String purpose, String captain, String secretary) {
+
+        PrinterJob job = PrinterJob.getPrinterJob();
+        job.setJobName("Certificate - " + req.requestType);
+        PageFormat pf = job.defaultPage();
+        pf.setOrientation(PageFormat.PORTRAIT);
+
+        job.setPrintable((graphics, pageFormat, pageIndex) -> {
+            if (pageIndex > 0) return Printable.NO_SUCH_PAGE;
+            Graphics2D g2 = (Graphics2D) graphics;
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            g2.translate(pageFormat.getImageableX(), pageFormat.getImageableY());
+
+            int pw = (int) pageFormat.getImageableWidth();
+            int ph = (int) pageFormat.getImageableHeight();
+
+            // Scale certificate to fit the printable area
+            double sx = pw / 640.0, sy = ph / 820.0;
+            double s  = Math.min(sx, sy);
+            g2.scale(s, s);
+
+            drawCertificate(g2, req, address, civil, sex, dob, pob, citizen, purpose,
+                            captain, secretary, 640, 820);
+            return Printable.PAGE_EXISTS;
+        }, pf);
+
+        if (job.printDialog()) {
+            try { job.print(); }
+            catch (PrinterException ex) {
+                JOptionPane.showMessageDialog(this, "Print failed: " + ex.getMessage(),
+                    "Print Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
 
     private void drawCentered(Graphics2D g, String text, int width, int y) {
         FontMetrics fm = g.getFontMetrics();
